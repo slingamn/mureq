@@ -13,6 +13,7 @@ import threading
 import tempfile
 import os.path
 import urllib.parse
+import ssl
 import http.client
 import http.server
 
@@ -100,6 +101,16 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(result['url'], 'https://httpbingo.org/get?a=b&c=d')
         self.assertEqual(result['args'], {'a': ['b'], 'c': ['d']})
 
+    def test_url_populated(self):
+        result = mureq.get('https://httpbingo.org/get?a=b')
+        self.assertEqual(result.url, 'https://httpbingo.org/get?a=b')
+
+        result = mureq.get('https://httpbingo.org/get', params={'a': 'b'})
+        self.assertEqual(result.url, 'https://httpbingo.org/get?a=b')
+
+        result = mureq.get('https://httpbingo.org/get?c=d', params={'a': 'b'})
+        self.assertEqual(result.url, 'https://httpbingo.org/get?c=d&a=b')
+
     def test_head(self):
         response = mureq.head('https://httpbingo.org/head')
         self.assertIn('Content-Length', response.headers)
@@ -157,6 +168,8 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
         # allow 1 redirect, we should actually retrieve /get
         response = mureq.get('https://httpbingo.org/redirect/1', max_redirects=1)
+        # url field should be populated with the retrieved URL
+        self.assertEqual(response.url, 'https://httpbingo.org/get')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
 
@@ -289,6 +302,46 @@ class MureqIntegrationPortTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
 
 
+BADSSL_ROOT="""
+-----BEGIN CERTIFICATE-----
+MIIGfjCCBGagAwIBAgIJAJeg/PrX5Sj9MA0GCSqGSIb3DQEBCwUAMIGBMQswCQYD
+VQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5j
+aXNjbzEPMA0GA1UECgwGQmFkU1NMMTQwMgYDVQQDDCtCYWRTU0wgVW50cnVzdGVk
+IFJvb3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTE2MDcwNzA2MzEzNVoXDTM2
+MDcwMjA2MzEzNVowgYExCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlh
+MRYwFAYDVQQHDA1TYW4gRnJhbmNpc2NvMQ8wDQYDVQQKDAZCYWRTU0wxNDAyBgNV
+BAMMK0JhZFNTTCBVbnRydXN0ZWQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkw
+ggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDKQtPMhEH073gis/HISWAi
+bOEpCtOsatA3JmeVbaWal8O/5ZO5GAn9dFVsGn0CXAHR6eUKYDAFJLa/3AhjBvWa
+tnQLoXaYlCvBjodjLEaFi8ckcJHrAYG9qZqioRQ16Yr8wUTkbgZf+er/Z55zi1yn
+CnhWth7kekvrwVDGP1rApeLqbhYCSLeZf5W/zsjLlvJni9OrU7U3a9msvz8mcCOX
+fJX9e3VbkD/uonIbK2SvmAGMaOj/1k0dASkZtMws0Bk7m1pTQL+qXDM/h3BQZJa5
+DwTcATaa/Qnk6YHbj/MaS5nzCSmR0Xmvs/3CulQYiZJ3kypns1KdqlGuwkfiCCgD
+yWJy7NE9qdj6xxLdqzne2DCyuPrjFPS0mmYimpykgbPnirEPBF1LW3GJc9yfhVXE
+Cc8OY8lWzxazDNNbeSRDpAGbBeGSQXGjAbliFJxwLyGzZ+cG+G8lc+zSvWjQu4Xp
+GJ+dOREhQhl+9U8oyPX34gfKo63muSgo539hGylqgQyzj+SX8OgK1FXXb2LS1gxt
+VIR5Qc4MmiEG2LKwPwfU8Yi+t5TYjGh8gaFv6NnksoX4hU42gP5KvjYggDpR+NSN
+CGQSWHfZASAYDpxjrOo+rk4xnO+sbuuMk7gORsrl+jgRT8F2VqoR9Z3CEdQxcCjR
+5FsfTymZCk3GfIbWKkaeLQIDAQABo4H2MIHzMB0GA1UdDgQWBBRvx4NzSbWnY/91
+3m1u/u37l6MsADCBtgYDVR0jBIGuMIGrgBRvx4NzSbWnY/913m1u/u37l6MsAKGB
+h6SBhDCBgTELMAkGA1UEBhMCVVMxEzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNV
+BAcMDVNhbiBGcmFuY2lzY28xDzANBgNVBAoMBkJhZFNTTDE0MDIGA1UEAwwrQmFk
+U1NMIFVudHJ1c3RlZCBSb290IENlcnRpZmljYXRlIEF1dGhvcml0eYIJAJeg/PrX
+5Sj9MAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IC
+AQBQU9U8+jTRT6H9AIFm6y50tXTg/ySxRNmeP1Ey9Zf4jUE6yr3Q8xBv9gTFLiY1
+qW2qfkDSmXVdBkl/OU3+xb5QOG5hW7wVolWQyKREV5EvUZXZxoH7LVEMdkCsRJDK
+wYEKnEErFls5WPXY3bOglBOQqAIiuLQ0f77a2HXULDdQTn5SueW/vrA4RJEKuWxU
+iD9XPnVZ9tPtky2Du7wcL9qhgTddpS/NgAuLO4PXh2TQ0EMCll5reZ5AEr0NSLDF
+c/koDv/EZqB7VYhcPzr1bhQgbv1dl9NZU0dWKIMkRE/T7vZ97I3aPZqIapC2ulrf
+KrlqjXidwrGFg8xbiGYQHPx3tHPZxoM5WG2voI6G3s1/iD+B4V6lUEvivd3f6tq7
+d1V/3q1sL5DNv7TvaKGsq8g5un0TAkqaewJQ5fXLigF/yYu5a24/GUD783MdAPFv
+gWz8F81evOyRfpf9CAqIswMF+T6Dwv3aw5L9hSniMrblkg+ai0K22JfoBcGOzMtB
+Ke/Ps2Za56dTRoY/a4r62hrcGxufXd0mTdPaJLw3sJeHYjLxVAYWQq4QKJQWDgTS
+dAEWyN2WXaBFPx5c8KIW95Eu8ShWE00VVC3oA4emoZ2nrzBXLrUScifY6VaYYkkR
+2O2tSqU8Ri3XRdgpNPDWp8ZL49KhYGYo3R/k98gnMHiY5g==
+-----END CERTIFICATE-----
+"""
+
 class MureqIntegrationBadSSLTestCase(unittest.TestCase):
 
     def test_ssl(self):
@@ -309,6 +362,17 @@ class MureqIntegrationBadSSLTestCase(unittest.TestCase):
         # and succeed with verify=False
         response = mureq.get(badurl, verify=False)
         self.assertEqual(response.status_code, 200)
+
+    def test_ssl_context(self):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.load_verify_locations(cadata=BADSSL_ROOT)
+
+        response = mureq.get("https://untrusted-root.badssl.com", ssl_context=context)
+        self.assertEqual(response.status_code, 200)
+
+        with self.assertRaises(mureq.HTTPException):
+            mureq.get("https://httpbingo.org", ssl_context=context)
+
 
 class MureqIntegrationExceptionTestCase(unittest.TestCase):
 

@@ -34,14 +34,14 @@ class RedirectTestCase(unittest.TestCase):
 class ReponseTestCase(unittest.TestCase):
 
     def test_ok(self):
-        self.assertEqual(Response(200, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response(204, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response(301, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response(400, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response(404, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response(418, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response(500, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response(504, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 200, HTTPMessage(), b'').ok, True)
+        self.assertEqual(Response('', 204, HTTPMessage(), b'').ok, True)
+        self.assertEqual(Response('', 301, HTTPMessage(), b'').ok, True)
+        self.assertEqual(Response('', 400, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 404, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 418, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 500, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 504, HTTPMessage(), b'').ok, False)
 
 
 if __name__ == '__main__':

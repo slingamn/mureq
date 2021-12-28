@@ -25,15 +25,16 @@ DEFAULT_TIMEOUT=15.0
 DEFAULT_UA = "Python " + sys.version.split()[0]
 
 
-def request(method, url, read_limit=None, **kwargs):
+def request(method, url, *, read_limit=None, **kwargs):
     """request performs an HTTP request and reads the entire response body.
 
-    :param method: HTTP method to request (e.g. 'GET', 'POST')
-    :param url: URL to request
+    :param str method: HTTP method to request (e.g. 'GET', 'POST')
+    :param str url: URL to request
     :param read_limit: maximum number of bytes to read from the body, or None for no limit
+    :type read_limit: int or None
     :param **kwargs: optional arguments defined by yield_response
     :return: Response object
-    :rtype: mureq.Response
+    :rtype: Response
     :raises: HTTPException
     """
     with yield_response(method, url, **kwargs) as response:
@@ -44,7 +45,7 @@ def request(method, url, read_limit=None, **kwargs):
                 raise
             else:
                 raise HTTPException(str(e)) from e
-        return Response(response.status, _prepare_incoming_headers(response.headers), body)
+        return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
 def get(url, **kwargs):
     """get performs a HTTP GET request."""
@@ -81,20 +82,26 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
     headers from the response, use response.getheader():
     https://docs.python.org/3/library/http.client.html#http.client.HTTPResponse.getheader
 
-    :param method: HTTP method to request (e.g. 'GET', 'POST')
-    :param url: URL to request
+    :param str method: HTTP method to request (e.g. 'GET', 'POST')
+    :param str url: URL to request
     :param unix_socket: path to Unix domain socket to query, or None for a normal TCP request
+    :type unix_socket: str or None
     :param timeout: timeout in seconds, or None for no timeout (default: 15 seconds)
+    :type timeout: float or None
     :param headers: HTTP headers as a mapping or list of key-value pairs
     :param params: parameters to be URL-encoded and added to the query string, as a mapping or list of key-value pairs
-    :param body: payload body of the request; must be bytes
+    :param bytes body: payload body of the request
     :param form: parameters to be form-encoded and sent as the payload body, as a mapping or list of key-value pairs
-    :param json: str or bytes containing serialized JSON data to be sent as the payload body
-    :param verify: bool, whether to verify TLS certificates (default: True)
-    :param source_address: source address to bind to for TCP: str, (str, int) pair, or None for default
-    :param max_redirects: int, maximum number of redirects to follow, or None (the default) to not follow any redirects
-    :param ssl_context: ssl.SSLContext object to control certificate validation, or None to use the default context
-    :return: http.client.HTTPResponse (yielded as context manager)
+    :param json: serialized JSON data to be sent as the payload body
+    :type json: str or bytes
+    :param bool verify: whether to verify TLS certificates (default: True)
+    :param source_address: source address to bind to for TCP
+    :type source_address: str or tuple(str, int) or None
+    :param max_redirects: maximum number of redirects to follow, or None (the default) for no redirection
+    :type max_redirects: int or None
+    :param ssl_context: TLS config to control certificate validation, or None for default behavior
+    :type ssl_context: ssl.SSLContext or None
+    :return: http.client.HTTPResponse, yielded as context manager
     :rtype: http.client.HTTPResponse
     :raises: HTTPException
     """
@@ -103,10 +110,12 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
     enc_params = _prepare_params(params)
     body = _prepare_body(body, form, json, headers)
 
-    redirected_urls = [url]
+    visited_urls = []
 
-    while max_redirects is None or (len(redirected_urls) - 1) <= max_redirects:
-        conn, path = _prepare_request(method, url, enc_params=enc_params, timeout=timeout, unix_socket=unix_socket, verify=verify, source_address=source_address, ssl_context=ssl_context)
+    while max_redirects is None or len(visited_urls) <= max_redirects:
+        url, conn, path = _prepare_request(method, url, enc_params=enc_params, timeout=timeout, unix_socket=unix_socket, verify=verify, source_address=source_address, ssl_context=ssl_context)
+        enc_params = '' # don't reappend enc_params if we get redirected
+        visited_urls.append(url)
         try:
             try:
                 conn.request(method, path, headers=headers, body=body)
@@ -120,10 +129,10 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
                     raise HTTPException(str(e)) from e
             redirect_url = _check_redirect(url, response.status, response.headers)
             if max_redirects is None or redirect_url is None:
+                response.url = url # https://bugs.python.org/issue42062
                 yield response
                 return
             else:
-                redirected_urls.append(redirect_url)
                 url = redirect_url
                 if response.status == 303:
                     # 303 See Other: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
@@ -131,19 +140,22 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
         finally:
             conn.close()
 
-    raise TooManyRedirects(redirected_urls)
+    raise TooManyRedirects(visited_urls)
 
 
 class Response:
-    """Response bundles together the elements of a completely consumed HTTP
-    response: the status code (`status_code`, int), the headers
-    (`headers`, http.client.HTTPMessage), and the payload body
-    (`body`, bytes)."""
+    """Response contains a completely consumed HTTP response.
 
-    __slots__ = ('status_code', 'headers', 'body')
+    :ivar str url: the retrieved URL, indicating whether a redirection occurred
+    :ivar int status_code: the HTTP status code
+    :ivar http.client.HTTPMessage headers: the HTTP headers
+    :ivar bytes body: the payload body of the response
+    """
 
-    def __init__(self, status_code, headers, body):
-        self.status_code, self.headers, self.body = status_code, headers, body
+    __slots__ = ('url', 'status_code', 'headers', 'body')
+
+    def __init__(self, url, status_code, headers, body):
+        self.url, self.status_code, self.headers, self.body = url, status_code, headers, body
 
     def __repr__(self):
         return "Response(status_code=%d)" % (self.status_code,)
@@ -158,7 +170,6 @@ class Response:
     def content(self):
         """content returns the response body (the `body` member). This is an
         alias for compatibility with requests.Response."""
-        # alias for compatibility with requests.Response:
         return self.body
 
     def _debugstr(self):
@@ -340,4 +351,6 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
     else:
         conn = HTTPConnection(host, port, source_address=source_address, timeout=timeout)
 
-    return conn, path
+    munged_url = urllib.parse.urlunparse((parsed_url.scheme, parsed_url.netloc,
+        path, parsed_url.params, '', parsed_url.fragment))
+    return munged_url, conn, path
