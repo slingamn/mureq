@@ -69,6 +69,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
             # should yield the stdlib type
             self.assertEqual(type(response), http.client.HTTPResponse)
             self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, 'https://httpbingo.org/get')
             self.assertEqual(json.loads(response.read())['url'], 'https://httpbingo.org/get')
 
     def test_bad_method(self):
