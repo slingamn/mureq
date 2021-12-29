@@ -166,6 +166,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         # by default redirect is not followed
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'], '/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/redirect/1')
 
         # allow 1 redirect, we should actually retrieve /get
         response = mureq.get('https://httpbingo.org/redirect/1', max_redirects=1)
@@ -173,6 +174,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.url, 'https://httpbingo.org/get')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/get')
 
         # redirect twice, should be disallowed:
         with self.assertRaises(mureq.TooManyRedirects):
@@ -181,6 +183,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         response = mureq.get('https://httpbingo.org/redirect/2', max_redirects=2)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/get')
 
         with self.assertRaises(mureq.TooManyRedirects):
             mureq.get('https://httpbingo.org/redirect/3', max_redirects=2)
@@ -189,16 +192,20 @@ class MureqIntegrationTestCase(unittest.TestCase):
         response = mureq.get('https://httpbingo.org/redirect-to?url=/get&status_code=307')
         self.assertEqual(response.status_code, 307)
         self.assertEqual(response.headers['Location'], '/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/redirect-to?url=/get&status_code=307')
 
         # 307 should be followed
         response = mureq.get('https://httpbingo.org/redirect-to?url=/get&status_code=307', max_redirects=1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/get')
 
         # 307 doesn't change the method:
         response = mureq.get('https://httpbingo.org/redirect-to?url=/post&status_code=307', max_redirects=1)
         self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.url, 'https://httpbingo.org/post')
         response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=307', body=b'xyz', max_redirects=1)
+        self.assertEqual(response.url, 'https://httpbingo.org/post')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['data'], 'xyz')
 
@@ -206,14 +213,17 @@ class MureqIntegrationTestCase(unittest.TestCase):
         # 303 turns POST into GET
         response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=303', body=b'xyz')
         self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.url, 'https://httpbingo.org/redirect-to?url=/post&status_code=303')
 
         response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=303', body=b'xyz', max_redirects=1)
-        # now we're trying to POST to /get, which should fail:
+        # now we're trying to GET to /post, which should fail:
         self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.url, 'https://httpbingo.org/post')
 
         response = mureq.post('https://httpbingo.org/redirect-to?url=/get&status_code=303', body=b'xyz', max_redirects=1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
+        self.assertEqual(response.url, 'https://httpbingo.org/get')
 
     def test_read_limit(self):
         response = mureq.get('https://httpbingo.org/get', headers={'X-Test-1': 'porcupine'})
