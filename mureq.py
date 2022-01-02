@@ -2,8 +2,6 @@
 mureq is a replacement for python-requests, intended to be vendored
 in-tree by Linux systems software and other lightweight applications.
 
-This is mureq version 0.1.0.
-
 mureq is copyright 2021 by its contributors and is released under the
 0BSD ("zero-clause BSD") license.
 """
@@ -15,6 +13,8 @@ import ssl
 import sys
 import urllib.parse
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException
+
+__version__ = '0.1.0'
 
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
