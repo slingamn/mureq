@@ -72,7 +72,9 @@ def delete(url, **kwargs):
     return request('DELETE', url=url, **kwargs)
 
 @contextlib.contextmanager
-def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, headers=None, params=None, body=None, form=None, json=None, verify=True, source_address=None, max_redirects=None, ssl_context=None):
+def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, headers=None,
+        params=None, body=None, form=None, json=None, verify=True, source_address=None,
+        max_redirects=None, ssl_context=None):
     """yield_response is a low-level API that exposes the actual
     http.client.HTTPResponse via a contextmanager.
 
