@@ -90,10 +90,11 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
     :type timeout: float or None
     :param headers: HTTP headers as a mapping or list of key-value pairs
     :param params: parameters to be URL-encoded and added to the query string, as a mapping or list of key-value pairs
-    :param bytes body: payload body of the request
+    :param body: payload body of the request
+    :type body: bytes or None
     :param form: parameters to be form-encoded and sent as the payload body, as a mapping or list of key-value pairs
     :param json: serialized JSON data to be sent as the payload body
-    :type json: str or bytes
+    :type json: str or bytes or None
     :param bool verify: whether to verify TLS certificates (default: True)
     :param source_address: source address to bind to for TCP
     :type source_address: str or tuple(str, int) or None
