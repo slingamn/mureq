@@ -40,11 +40,10 @@ def request(method, url, *, read_limit=None, **kwargs):
     with yield_response(method, url, **kwargs) as response:
         try:
             body = response.read(read_limit)
+        except HTTPException:
+            raise
         except IOError as e:
-            if isinstance(e, HTTPException):
-                raise
-            else:
-                raise HTTPException(str(e)) from e
+            raise HTTPException(str(e)) from e
         return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
 def get(url, **kwargs):
@@ -123,13 +122,12 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
             try:
                 conn.request(method, path, headers=headers, body=body)
                 response = conn.getresponse()
+            except HTTPException:
+                raise
             except IOError as e:
-                if isinstance(e, HTTPException):
-                    raise
-                else:
-                    # wrap any IOError that is not already an HTTPException
-                    # in HTTPException, exposing a uniform API for remote errors
-                    raise HTTPException(str(e)) from e
+                # wrap any IOError that is not already an HTTPException
+                # in HTTPException, exposing a uniform API for remote errors
+                raise HTTPException(str(e)) from e
             redirect_url = _check_redirect(url, response.status, response.headers)
             if max_redirects is None or redirect_url is None:
                 response.url = url # https://bugs.python.org/issue42062
