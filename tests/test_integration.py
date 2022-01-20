@@ -238,6 +238,18 @@ class MureqIntegrationTestCase(unittest.TestCase):
         with self.assertRaises(json.JSONDecodeError):
             json.loads(response.body)
 
+    def test_timeout(self):
+        result = mureq.get('https://httpbingo.org/delay/1', timeout=5.0)
+        self.assertEqual(result.status_code, 200)
+
+        exc = None
+        try:
+            mureq.get('https://httpbingo.org/delay/2', timeout=1.0)
+        except Exception as e:
+            exc = e
+
+        self.assertTrue(isinstance(exc, mureq.HTTPException))
+        self.assertTrue(isinstance(exc.__cause__, socket.timeout))
 
 def _run_unix_server(sock):
     """Accept loop for a toy http+unix server, to be run in a thread."""
