@@ -1,5 +1,7 @@
 import unittest
+# noinspection PyProtectedMember
 from mureq import _check_redirect, Response, HTTPMessage
+
 
 class RedirectTestCase(unittest.TestCase):
 
@@ -31,7 +33,7 @@ class RedirectTestCase(unittest.TestCase):
         self.assertEqual(_check_redirect('https://www.google.com/baz/qux', 302, {'Location': 'search/'}), 'https://www.google.com/baz/search/')
 
 
-class ReponseTestCase(unittest.TestCase):
+class ResponseTestCase(unittest.TestCase):
 
     def test_ok(self):
         self.assertEqual(Response('', 200, HTTPMessage(), b'').ok, True)

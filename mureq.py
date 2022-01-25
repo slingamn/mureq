@@ -16,7 +16,7 @@ from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPExcept
 
 __version__ = '0.1.0'
 
-__all__ = ['HTTPException', 'TooManyRedirects', 'Response',
+__all__ = ['HTTPException', 'TooManyRedirects', 'Response', 'HTTPMessage',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
 
 DEFAULT_TIMEOUT = 15.0

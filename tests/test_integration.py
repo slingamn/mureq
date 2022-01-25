@@ -36,6 +36,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(result['headers']['User-Agent'], [mureq.DEFAULT_UA])
         self.assertEqual(result['url'], 'https://httpbingo.org/get')
 
+    # noinspection HttpUrlsUsage
     def test_get_http(self):
         result = self._get_json(mureq.get('http://httpbingo.org/get'))
         self.assertEqual(result['headers']['User-Agent'], [mureq.DEFAULT_UA])
@@ -43,7 +44,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
     def test_headers(self):
         result = self._get_json(mureq.get('https://httpbingo.org/get',
-            headers={'User-Agent': 'xyzzy', 'X-Test-Header': 'plugh'}))
+                                          headers={'User-Agent': 'xyzzy', 'X-Test-Header': 'plugh'}))
         self.assertEqual(result['url'], 'https://httpbingo.org/get')
         self.assertEqual(result['headers']['User-Agent'], ['xyzzy'])
         self.assertEqual(result['headers']['X-Test-Header'], ['plugh'])
@@ -142,7 +143,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
         data = json.dumps({'b': 2})
         result = self._get_json(mureq.post('https://httpbingo.org/post', json=data,
-            headers={'Content-Type': 'application/jose+json'}))
+                                           headers={'Content-Type': 'application/jose+json'}))
         # we must not override the user-supplied content-type header
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
         self.assertEqual(result['data'], data)
@@ -156,7 +157,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
         # we must not override the user-supplied content-type header if it is present:
         result = self._get_json(mureq.post('https://httpbingo.org/post', form={'a': '1'},
-            headers={'Content-Type': 'application/jose+json'}))
+                                           headers={'Content-Type': 'application/jose+json'}))
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
         self.assertEqual(result['data'], 'a=1')
 
@@ -204,7 +205,8 @@ class MureqIntegrationTestCase(unittest.TestCase):
         response = mureq.get('https://httpbingo.org/redirect-to?url=/post&status_code=307', max_redirects=1)
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response.url, 'https://httpbingo.org/post')
-        response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=307', body=b'xyz', max_redirects=1)
+        response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=307', body=b'xyz',
+                              max_redirects=1)
         self.assertEqual(response.url, 'https://httpbingo.org/post')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['data'], 'xyz')
@@ -215,12 +217,14 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.url, 'https://httpbingo.org/redirect-to?url=/post&status_code=303')
 
-        response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=303', body=b'xyz', max_redirects=1)
+        response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=303', body=b'xyz',
+                              max_redirects=1)
         # now we're trying to GET to /post, which should fail:
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response.url, 'https://httpbingo.org/post')
 
-        response = mureq.post('https://httpbingo.org/redirect-to?url=/get&status_code=303', body=b'xyz', max_redirects=1)
+        response = mureq.post('https://httpbingo.org/redirect-to?url=/get&status_code=303', body=b'xyz',
+                              max_redirects=1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.body)['url'], 'https://httpbingo.org/get')
         self.assertEqual(response.url, 'https://httpbingo.org/get')
@@ -231,7 +235,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         length = int(response.headers.get('content-length'))
         self.assertEqual(length, len(response.body))
 
-        limit = length//2
+        limit = length // 2
         response = mureq.get('https://httpbingo.org/get', headers={'X-Test-1': 'porcupine'}, read_limit=limit)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.body), limit)
@@ -251,6 +255,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertTrue(isinstance(exc, mureq.HTTPException))
         self.assertTrue(isinstance(exc.__cause__, socket.timeout))
 
+
 def _run_unix_server(sock):
     """Accept loop for a toy http+unix server, to be run in a thread."""
     while True:
@@ -258,12 +263,13 @@ def _run_unix_server(sock):
             connection, _ = sock.accept()
         except:
             return
-        fileobj = connection.makefile('rb')
+        file_obj = connection.makefile('rb')
         # read all headers
-        while fileobj.readline().strip():
+        while file_obj.readline().strip():
             pass
         connection.send(b'HTTP/1.0 204 No Content\r\nDate: Sun, 12 Dec 2021 08:17:16 GMT\r\n\r\n')
         connection.close()
+
 
 @contextlib.contextmanager
 def unix_http_server():
@@ -279,6 +285,7 @@ def unix_http_server():
         finally:
             sock.shutdown(socket.SHUT_RDWR)
             sock.close()
+
 
 class MureqIntegrationUnixSocketTestCase(unittest.TestCase):
 
@@ -325,7 +332,7 @@ class MureqIntegrationPortTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
 
 
-BADSSL_ROOT="""
+BADSSL_ROOT = """
 -----BEGIN CERTIFICATE-----
 MIIGfjCCBGagAwIBAgIJAJeg/PrX5Sj9MA0GCSqGSIb3DQEBCwUAMIGBMQswCQYD
 VQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5j
@@ -365,6 +372,7 @@ dAEWyN2WXaBFPx5c8KIW95Eu8ShWE00VVC3oA4emoZ2nrzBXLrUScifY6VaYYkkR
 -----END CERTIFICATE-----
 """
 
+
 class MureqIntegrationBadSSLTestCase(unittest.TestCase):
 
     def test_ssl(self):
@@ -375,15 +383,15 @@ class MureqIntegrationBadSSLTestCase(unittest.TestCase):
 
         # whether this is detectable will depend on the age of the ca-certificates
         # package. Python doesn't have OCSP support: https://bugs.python.org/issue17123
-        #self._check_bad_ssl('https://revoked.badssl.com/')
-        #self._check_bad_ssl('https://pinning-test.badssl.com/')
+        # self._check_bad_ssl('https://revoked.badssl.com/')
+        # self._check_bad_ssl('https://pinning-test.badssl.com/')
 
-    def _check_bad_ssl(self, badurl):
+    def _check_bad_ssl(self, bad_url):
         # validation should fail with default arguments
         with self.assertRaises(mureq.HTTPException):
-            response = mureq.get(badurl)
+            mureq.get(bad_url)
         # and succeed with verify=False
-        response = mureq.get(badurl, verify=False)
+        response = mureq.get(bad_url, verify=False)
         self.assertEqual(response.status_code, 200)
 
     def test_ssl_context(self):
@@ -422,6 +430,7 @@ class MureqIntegrationExceptionTestCase(unittest.TestCase):
 
 
 def _resolve_name(hostname, desired_family=socket.AF_INET6):
+    family = ''
     for (family, type_, proto, canonname, sockaddr) in socket.getaddrinfo(hostname, None):
         if family == desired_family:
             return sockaddr[0]
@@ -434,6 +443,7 @@ class MureqIntegrationIPAddressURLTestCase(unittest.TestCase):
     # requiring SNI. if you substitute httpbingo.org you get:
     # ssl.SSLError: [SSL: TLSV1_ALERT_ACCESS_DENIED] tlsv1 alert access denied (_ssl.c:1131)
 
+    # noinspection HttpUrlsUsage
     def test_ipv6_url(self):
         addr = _resolve_name('example.com', socket.AF_INET6)
         # ipv6 address must be in brackets
@@ -448,6 +458,7 @@ class MureqIntegrationIPAddressURLTestCase(unittest.TestCase):
         self.assertEqual(mureq.get(https_url, headers=headers, verify=False).status_code, 200)
         self.assertEqual(mureq.get(https_url_port, headers=headers, verify=False).status_code, 200)
 
+    # noinspection HttpUrlsUsage
     def test_ipv4_url(self):
         addr = _resolve_name('example.com', socket.AF_INET)
         http_url = f'http://{addr}/'
