@@ -222,7 +222,7 @@ class UnixHTTPConnection(HTTPConnection):
         try:
             sock.settimeout(self.timeout)
             sock.connect(self._unix_path)
-        except:
+        except Exception:
             sock.close()
             raise
         self.sock = sock
@@ -318,7 +318,7 @@ def _prepare_params(params):
     return urllib.parse.urlencode(params, doseq=True)
 
 
-def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, source_address=None, unix_socket=None,
+def _prepare_request(_, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, source_address=None, unix_socket=None,
                      verify=True, ssl_context=None):
     """Parses the URL, returns the path and the right HTTPConnection subclass."""
     parsed_url = urllib.parse.urlparse(url)
