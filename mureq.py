@@ -176,7 +176,7 @@ class Response:
     def ok(self):
         """ok returns whether the response had a successful status code
         (anything other than a 40x or 50x)."""
-        return not (400 <= self.status_code and self.status_code < 600)
+        return not (400 <= self.status_code < 600)
 
     @property
     def content(self):
