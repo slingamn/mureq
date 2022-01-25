@@ -234,7 +234,7 @@ class UnixHTTPConnection(HTTPConnection):
         try:
             sock.settimeout(self.timeout)
             sock.connect(self._unix_path)
-        except:
+        except Exception:
             sock.close()
             raise
         self.sock = sock
