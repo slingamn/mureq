@@ -32,7 +32,7 @@ def request(method, url, *, read_limit=None, **kwargs):
     :param str url: URL to request
     :param read_limit: maximum number of bytes to read from the body, or None for no limit
     :type read_limit: int or None
-    :param **kwargs: optional arguments defined by yield_response
+    :param kwargs: optional arguments defined by yield_response
     :return: Response object
     :rtype: Response
     :raises: HTTPException
@@ -161,7 +161,7 @@ class Response:
         self.url, self.status_code, self.headers, self.body = url, status_code, headers, body
 
     def __repr__(self):
-        return "Response(status_code=%d)" % (self.status_code,)
+        return f"Response(status_code={self.status_code:d})"
 
     @property
     def ok(self):
@@ -185,12 +185,12 @@ class Response:
         buf = io.StringIO()
         print("HTTP", self.status_code, file=buf)
         for k, v in self.headers.items():
-            print("%s: %s" % (k, v), file=buf)
+            print(f"{k}: {v}", file=buf)
         print(file=buf)
         try:
             print(self.body.decode('utf-8'), file=buf)
         except UnicodeDecodeError:
-            print("<%d bytes binary data>" % (len(self.body),), file=buf)
+            print(f"<{len(self.body)} bytes binary data>", file=buf)
         return buf.getvalue()
 
 
@@ -349,12 +349,12 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
     path = parsed_url.path
     if parsed_url.query:
         if enc_params:
-            path = '%s?%s&%s' % (path, parsed_url.query, enc_params)
+            path = f'{path}?{parsed_url.query}&{enc_params}'
         else:
-            path = '%s?%s' % (path, parsed_url.query)
+            path = f'{path}?{parsed_url.query}'
     else:
         if enc_params:
-            path = '%s?%s' % (path, enc_params)
+            path = f'{path}?{enc_params}'
         else:
             pass # just parsed_url.path in this case
 
