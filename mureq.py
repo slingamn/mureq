@@ -8,7 +8,6 @@ mureq is copyright 2021 by its contributors and is released under the
 import contextlib
 import io
 import os.path
-import json
 import socket
 import ssl
 import sys
@@ -196,23 +195,6 @@ class Response:
             print(f"<{len(self.body)} bytes binary data>", file=buf)
         return buf.getvalue()
 
-    def raise_for_status(self):
-        """Raises :class:`HTTPError`, if one occurred."""
-
-        http_error_msg = ''
-        if 400 <= self.status_code < 500:
-            http_error_msg = f'{self.status_code} Client Error for url: {self.url}'
-
-        elif 500 <= self.status_code < 600:
-            http_error_msg = f'{self.status_code} Server Error for url: {self.url}'
-
-        if http_error_msg:
-            raise HTTPException(http_error_msg)
-
-    def json(self):
-        self.raise_for_status()
-        return json.loads(self.body)
-
 
 class TooManyRedirects(HTTPException):
     """TooManyRedirects is raised when automatic following of redirects was
@@ -307,21 +289,21 @@ def _setdefault_header(headers, name, value):
         headers[name] = value
 
 
-def _prepare_body(body, form, json, headers):
+def _prepare_body(body, form, json_, headers):
     if body is not None:
         if not isinstance(body, bytes):
             raise TypeError('body must be bytes or None', type(body))
         return body
 
-    if json is not None:
-        if isinstance(json, bytes):
+    if json_ is not None:
+        if isinstance(json_, bytes):
             _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json
-        elif isinstance(json, str):
+            return json_
+        elif isinstance(json_, str):
             _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json.encode('utf-8')
+            return json_.encode('utf-8')
         else:
-            raise TypeError('json must be str, bytes, or None', type(json))
+            raise TypeError('json must be str, bytes, or None', type(json_))
 
     if form is not None:
         _setdefault_header(headers, 'Content-Type', _FORM_CONTENTTYPE)
