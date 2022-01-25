@@ -48,27 +48,27 @@ def request(method, url, *, read_limit=None, **kwargs):
         return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
 def get(url, **kwargs):
-    """get performs a HTTP GET request."""
+    """get performs an HTTP GET request."""
     return request('GET', url=url, **kwargs)
 
 def post(url, body=None, **kwargs):
-    """post performs a HTTP POST request."""
+    """post performs an HTTP POST request."""
     return request('POST', url=url, body=body, **kwargs)
 
 def head(url, **kwargs):
-    """head performs a HTTP HEAD request."""
+    """head performs an HTTP HEAD request."""
     return request('HEAD', url=url, **kwargs)
 
 def put(url, body=None, **kwargs):
-    """put performs a HTTP PUT request."""
+    """put performs an HTTP PUT request."""
     return request('PUT', url=url, body=body, **kwargs)
 
 def patch(url, body=None, **kwargs):
-    """patch performs a HTTP PATCH request."""
+    """patch performs an HTTP PATCH request."""
     return request('PATCH', url=url, body=body, **kwargs)
 
 def delete(url, **kwargs):
-    """delete performs a HTTP DELETE request."""
+    """delete performs an HTTP DELETE request."""
     return request('DELETE', url=url, **kwargs)
 
 @contextlib.contextmanager
