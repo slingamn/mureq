@@ -290,7 +290,7 @@ class MureqIntegrationUnixSocketTestCase(unittest.TestCase):
 
             # test unix socket URL convention:
             # quote() has default safe='/', we must explicitly disable that so / is quoted as %2F
-            response = mureq.get('http+unix://%s/bar/baz' % (urllib.parse.quote(unix_socket, safe=''),))
+            response = mureq.get(f"http+unix://{urllib.parse.quote(unix_socket, safe='')}/bar/baz")
             self.assertEqual(response.status_code, 204)
             self.assertEqual(response.headers['Date'], 'Sun, 12 Dec 2021 08:17:16 GMT')
 
@@ -437,10 +437,10 @@ class MureqIntegrationIPAddressURLTestCase(unittest.TestCase):
     def test_ipv6_url(self):
         addr = _resolve_name('example.com', socket.AF_INET6)
         # ipv6 address must be in brackets
-        http_url = 'http://[%s]/' % (addr,)
-        http_url_port = 'http://[%s]:80/' % (addr,)
-        https_url = 'https://[%s]/' % (addr,)
-        https_url_port = 'https://[%s]:443/' % (addr,)
+        http_url = f'http://[{addr}]/'
+        http_url_port = f'http://[{addr}]:80/'
+        https_url = f'https://[{addr}]/'
+        https_url_port = f'https://[{addr}]:443/'
 
         headers = {'Host': 'example.com'}
         self.assertEqual(mureq.get(http_url, headers=headers).status_code, 200)
@@ -450,10 +450,10 @@ class MureqIntegrationIPAddressURLTestCase(unittest.TestCase):
 
     def test_ipv4_url(self):
         addr = _resolve_name('example.com', socket.AF_INET)
-        http_url = 'http://%s/' % (addr,)
-        http_url_port = 'http://%s:80/' % (addr,)
-        https_url = 'https://%s/' % (addr,)
-        https_url_port = 'https://%s:443/' % (addr,)
+        http_url = f'http://{addr}/'
+        http_url_port = f'http://{addr}:80/'
+        https_url = f'https://{addr}/'
+        https_url_port = f'https://{addr}:443/'
 
         headers = {'Host': 'example.com'}
         self.assertEqual(mureq.get(http_url, headers=headers).status_code, 200)
