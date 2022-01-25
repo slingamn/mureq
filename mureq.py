@@ -189,14 +189,14 @@ class Response:
         return buf.getvalue()
 
     def raise_for_status(self):
-        """Raises :class:`HTTPError`, if one occurred."""
+        """Raises :class:`HTTPException`, if one occurred."""
 
         http_error_msg = ''
         if 400 <= self.status_code < 500:
-            http_error_msg = f'{self.status_code} Client Error for url: {self.url}'
+            http_error_msg = f'{self.status_code} - Client error for url: {self.url}'
 
         elif 500 <= self.status_code < 600:
-            http_error_msg = f'{self.status_code} Server Error for url: {self.url}'
+            http_error_msg = f'{self.status_code} - Server error for url: {self.url}'
 
         if http_error_msg:
             raise HTTPException(http_error_msg)
