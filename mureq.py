@@ -202,7 +202,6 @@ class Response:
             raise HTTPException(http_error_msg)
 
     def json(self):
-        self.raise_for_status()
         return json.loads(self.body)
 
 

@@ -1,4 +1,7 @@
+import json
 import unittest
+from http.client import HTTPException
+
 from mureq import _check_redirect, Response, HTTPMessage
 
 class RedirectTestCase(unittest.TestCase):
@@ -42,6 +45,28 @@ class ReponseTestCase(unittest.TestCase):
         self.assertEqual(Response('', 418, HTTPMessage(), b'').ok, False)
         self.assertEqual(Response('', 500, HTTPMessage(), b'').ok, False)
         self.assertEqual(Response('', 504, HTTPMessage(), b'').ok, False)
+
+    # noinspection PyMethodMayBeStatic
+    def test_raise_for_status_good(self):
+        resp = Response('', 201, HTTPMessage(), b"We're all OK")
+        resp.raise_for_status()
+
+    def test_raise_for_status_bad(self):
+        resp = Response('', 502, HTTPMessage(), b"It's going down")
+        with self.assertRaises(HTTPException):
+            resp.raise_for_status()
+
+    def test_json_good(self):
+        resp = Response('', 200, HTTPMessage(), b'{"data": 722}')
+        data = resp.json()
+
+        self.assertEqual(data['data'], 722)
+
+    def test_json_bad_response(self):
+        resp = Response('', 200, HTTPMessage(), b'THIS IS NOT JSON')
+
+        with self.assertRaises(json.decoder.JSONDecodeError):
+            resp.json()
 
 
 if __name__ == '__main__':
