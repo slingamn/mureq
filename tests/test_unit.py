@@ -1,5 +1,5 @@
 import unittest
-from mureq import _check_redirect, Response, HTTPMessage
+from mureq import _check_redirect, Response, HTTPMessage, HTTPErrorStatus
 
 class RedirectTestCase(unittest.TestCase):
 
@@ -42,6 +42,30 @@ class ReponseTestCase(unittest.TestCase):
         self.assertEqual(Response('', 418, HTTPMessage(), b'').ok, False)
         self.assertEqual(Response('', 500, HTTPMessage(), b'').ok, False)
         self.assertEqual(Response('', 504, HTTPMessage(), b'').ok, False)
+
+    def _assert_raises_for_status(self, code):
+        resp = Response('', code, HTTPMessage(), b'')
+        try:
+            resp.raise_for_status()
+        except HTTPErrorStatus as e:
+            self.assertEqual(e.status_code, code)
+        else:
+            raise AssertionError("did not raise for status", code)
+
+    def _assert_does_not_raise_for_status(self, code):
+        resp = Response('', code, HTTPMessage(), b'')
+        resp.raise_for_status()
+
+    def test_raise_for_status(self):
+        self._assert_raises_for_status(400)
+        self._assert_raises_for_status(401)
+        self._assert_raises_for_status(500)
+        self._assert_raises_for_status(504)
+
+        self._assert_does_not_raise_for_status(200)
+        self._assert_does_not_raise_for_status(204)
+        self._assert_does_not_raise_for_status(301)
+        self._assert_does_not_raise_for_status(307)
 
 
 if __name__ == '__main__':
