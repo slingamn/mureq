@@ -175,6 +175,12 @@ class Response:
         alias for compatibility with requests.Response."""
         return self.body
 
+    def raise_for_status(self):
+        """raise_for_status checks the response's success code, raising an
+        exception for error codes."""
+        if not self.ok:
+            raise HTTPErrorStatus(self.status_code)
+
     def _debugstr(self):
         buf = io.StringIO()
         print("HTTP", self.status_code, file=buf)
@@ -192,6 +198,20 @@ class TooManyRedirects(HTTPException):
     """TooManyRedirects is raised when automatic following of redirects was
     enabled, but the server redirected too many times without completing."""
     pass
+
+
+class HTTPErrorStatus(HTTPException):
+    """HTTPErrorStatus is raised by Response.raise_for_status() to indicate an
+    HTTP error code (a 40x or a 50x). Note that a well-formed response with an
+    error code does not result in an exception unless raise_for_status() is
+    called explicitly.
+    """
+
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+    def __str__(self):
+        return f"HTTP response returned error code {self.status_code:d}"
 
 
 # end public API, begin internal implementation details
