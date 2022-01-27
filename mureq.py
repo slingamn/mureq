@@ -19,7 +19,7 @@ __version__ = '0.1.0'
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
 
-DEFAULT_TIMEOUT=15.0
+DEFAULT_TIMEOUT = 15.0
 
 # e.g. "Python 3.8.10"
 DEFAULT_UA = "Python " + sys.version.split()[0]
@@ -32,7 +32,7 @@ def request(method, url, *, read_limit=None, **kwargs):
     :param str url: URL to request
     :param read_limit: maximum number of bytes to read from the body, or None for no limit
     :type read_limit: int or None
-    :param **kwargs: optional arguments defined by yield_response
+    :param kwargs: optional arguments defined by yield_response
     :return: Response object
     :rtype: Response
     :raises: HTTPException
@@ -47,34 +47,41 @@ def request(method, url, *, read_limit=None, **kwargs):
                 raise HTTPException(str(e)) from e
         return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
+
 def get(url, **kwargs):
-    """get performs a HTTP GET request."""
+    """get performs an HTTP GET request."""
     return request('GET', url=url, **kwargs)
 
+
 def post(url, body=None, **kwargs):
-    """post performs a HTTP POST request."""
+    """post performs an HTTP POST request."""
     return request('POST', url=url, body=body, **kwargs)
 
+
 def head(url, **kwargs):
-    """head performs a HTTP HEAD request."""
+    """head performs an HTTP HEAD request."""
     return request('HEAD', url=url, **kwargs)
 
+
 def put(url, body=None, **kwargs):
-    """put performs a HTTP PUT request."""
+    """put performs an HTTP PUT request."""
     return request('PUT', url=url, body=body, **kwargs)
 
+
 def patch(url, body=None, **kwargs):
-    """patch performs a HTTP PATCH request."""
+    """patch performs an HTTP PATCH request."""
     return request('PATCH', url=url, body=body, **kwargs)
 
+
 def delete(url, **kwargs):
-    """delete performs a HTTP DELETE request."""
+    """delete performs an HTTP DELETE request."""
     return request('DELETE', url=url, **kwargs)
+
 
 @contextlib.contextmanager
 def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, headers=None,
-        params=None, body=None, form=None, json=None, verify=True, source_address=None,
-        max_redirects=None, ssl_context=None):
+                   params=None, body=None, form=None, json=None, verify=True, source_address=None,
+                   max_redirects=None, ssl_context=None):
     """yield_response is a low-level API that exposes the actual
     http.client.HTTPResponse via a contextmanager.
 
@@ -117,7 +124,7 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
 
     while max_redirects is None or len(visited_urls) <= max_redirects:
         url, conn, path = _prepare_request(method, url, enc_params=enc_params, timeout=timeout, unix_socket=unix_socket, verify=verify, source_address=source_address, ssl_context=ssl_context)
-        enc_params = '' # don't reappend enc_params if we get redirected
+        enc_params = ''  # don't reappend enc_params if we get redirected
         visited_urls.append(url)
         try:
             try:
@@ -132,7 +139,7 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
                     raise HTTPException(str(e)) from e
             redirect_url = _check_redirect(url, response.status, response.headers)
             if max_redirects is None or redirect_url is None:
-                response.url = url # https://bugs.python.org/issue42062
+                response.url = url  # https://bugs.python.org/issue42062
                 yield response
                 return
             else:
@@ -161,13 +168,13 @@ class Response:
         self.url, self.status_code, self.headers, self.body = url, status_code, headers, body
 
     def __repr__(self):
-        return "Response(status_code=%d)" % (self.status_code,)
+        return f"Response(status_code={self.status_code:d})"
 
     @property
     def ok(self):
         """ok returns whether the response had a successful status code
         (anything other than a 40x or 50x)."""
-        return not (400 <= self.status_code and self.status_code < 600)
+        return not (400 <= self.status_code < 600)
 
     @property
     def content(self):
@@ -185,12 +192,12 @@ class Response:
         buf = io.StringIO()
         print("HTTP", self.status_code, file=buf)
         for k, v in self.headers.items():
-            print("%s: %s" % (k, v), file=buf)
+            print(f"{k}: {v}", file=buf)
         print(file=buf)
         try:
             print(self.body.decode('utf-8'), file=buf)
         except UnicodeDecodeError:
-            print("<%d bytes binary data>" % (len(self.body),), file=buf)
+            print(f"<{len(self.body)} bytes binary data>", file=buf)
         return buf.getvalue()
 
 
@@ -234,10 +241,11 @@ class UnixHTTPConnection(HTTPConnection):
         try:
             sock.settimeout(self.timeout)
             sock.connect(self._unix_path)
-        except:
+        except Exception:
             sock.close()
             raise
         self.sock = sock
+
 
 def _check_redirect(url, status, response_headers):
     """Return the URL to redirect to, or None for no redirection."""
@@ -255,13 +263,16 @@ def _check_redirect(url, status, response_headers):
     if location.startswith('/'):
         # absolute path on old hostname
         return urllib.parse.urlunparse((old_url.scheme, old_url.netloc,
-            parsed_location.path, parsed_location.params, parsed_location.query, parsed_location.fragment))
+                                        parsed_location.path, parsed_location.params,
+                                        parsed_location.query, parsed_location.fragment))
 
     # relative path on old hostname
     old_dir, _old_file = os.path.split(old_url.path)
     new_path = os.path.join(old_dir, location)
     return urllib.parse.urlunparse((old_url.scheme, old_url.netloc,
-        new_path, parsed_location.params, parsed_location.query, parsed_location.fragment))
+                                    new_path, parsed_location.params,
+                                    parsed_location.query, parsed_location.fragment))
+
 
 def _prepare_outgoing_headers(headers):
     if headers is None:
@@ -278,6 +289,7 @@ def _prepare_outgoing_headers(headers):
     _setdefault_header(headers, 'User-Agent', DEFAULT_UA)
     return headers
 
+
 # XXX join multi-headers together so that get(), __getitem__(),
 # etc. behave intuitively, then stuff them back in an HTTPMessage.
 def _prepare_incoming_headers(headers):
@@ -291,9 +303,11 @@ def _prepare_incoming_headers(headers):
         result[k] = ','.join(vlist)
     return result
 
+
 def _setdefault_header(headers, name, value):
     if name not in headers:
         headers[name] = value
+
 
 def _prepare_body(body, form, json, headers):
     if body is not None:
@@ -317,10 +331,12 @@ def _prepare_body(body, form, json, headers):
 
     return None
 
+
 def _prepare_params(params):
     if params is None:
         return ''
     return urllib.parse.urlencode(params, doseq=True)
+
 
 def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, source_address=None, unix_socket=None, verify=True, ssl_context=None):
     """Parses the URL, returns the path and the right HTTPConnection subclass."""
@@ -349,14 +365,14 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
     path = parsed_url.path
     if parsed_url.query:
         if enc_params:
-            path = '%s?%s&%s' % (path, parsed_url.query, enc_params)
+            path = f'{path}?{parsed_url.query}&{enc_params}'
         else:
-            path = '%s?%s' % (path, parsed_url.query)
+            path = f'{path}?{parsed_url.query}'
     else:
         if enc_params:
-            path = '%s?%s' % (path, enc_params)
+            path = f'{path}?{enc_params}'
         else:
-            pass # just parsed_url.path in this case
+            pass  # just parsed_url.path in this case
 
     if isinstance(source_address, str):
         source_address = (source_address, 0)
@@ -375,5 +391,6 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
         conn = HTTPConnection(host, port, source_address=source_address, timeout=timeout)
 
     munged_url = urllib.parse.urlunparse((parsed_url.scheme, parsed_url.netloc,
-        path, parsed_url.params, '', parsed_url.fragment))
+                                          path, parsed_url.params,
+                                          '', parsed_url.fragment))
     return munged_url, conn, path
