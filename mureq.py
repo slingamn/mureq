@@ -14,10 +14,6 @@ import sys
 import urllib.parse
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException
 
-# to use simplejson exclusively, replace this with:
-# import simplejson as jsonlib
-import json as jsonlib
-
 __version__ = '0.1.0'
 
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
@@ -191,6 +187,7 @@ class Response:
 
     def json(self):
         """Attempts to deserialize the response body as UTF-8 encoded JSON."""
+        _ensure_jsonlib()
         return jsonlib.loads(self.body)
 
     def _debugstr(self):
@@ -230,6 +227,17 @@ class HTTPErrorStatus(HTTPException):
 
 _JSON_CONTENTTYPE = 'application/json'
 _FORM_CONTENTTYPE = 'application/x-www-form-urlencoded'
+
+jsonlib = None
+
+
+def _ensure_jsonlib():
+    global jsonlib
+    if jsonlib is None:
+        # to use simplejson exclusively, replace this with:
+        # import simplejson as json
+        import json
+        jsonlib = json
 
 
 class UnixHTTPConnection(HTTPConnection):
@@ -322,6 +330,7 @@ def _prepare_body(body, form, json, headers):
 
     if json is not None:
         _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
+        _ensure_jsonlib()
         return jsonlib.dumps(json).encode('utf-8')
 
     if form is not None:
