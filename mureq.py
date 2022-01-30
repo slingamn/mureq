@@ -101,8 +101,7 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
     :param body: payload body of the request
     :type body: bytes or None
     :param form: parameters to be form-encoded and sent as the payload body, as a mapping or list of key-value pairs
-    :param json: serialized JSON data to be sent as the payload body
-    :type json: str or bytes or None
+    :param json: object to be serialized as JSON and sent as the payload body
     :param bool verify: whether to verify TLS certificates (default: True)
     :param source_address: source address to bind to for TCP
     :type source_address: str or tuple(str, int) or None
@@ -186,6 +185,11 @@ class Response:
         if not self.ok:
             raise HTTPErrorStatus(self.status_code)
 
+    def json(self):
+        """Attempts to deserialize the response body as UTF-8 encoded JSON."""
+        _ensure_jsonlib()
+        return jsonlib.loads(self.body)
+
     def _debugstr(self):
         buf = io.StringIO()
         print("HTTP", self.status_code, file=buf)
@@ -223,6 +227,17 @@ class HTTPErrorStatus(HTTPException):
 
 _JSON_CONTENTTYPE = 'application/json'
 _FORM_CONTENTTYPE = 'application/x-www-form-urlencoded'
+
+jsonlib = None
+
+
+def _ensure_jsonlib():
+    global jsonlib
+    if jsonlib is None:
+        # to use simplejson exclusively, replace this with:
+        # import simplejson as json
+        import json
+        jsonlib = json
 
 
 class UnixHTTPConnection(HTTPConnection):
@@ -314,14 +329,9 @@ def _prepare_body(body, form, json, headers):
         return body
 
     if json is not None:
-        if isinstance(json, bytes):
-            _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json
-        elif isinstance(json, str):
-            _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json.encode('utf-8')
-        else:
-            raise TypeError('json must be str, bytes, or None', type(json))
+        _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
+        _ensure_jsonlib()
+        return jsonlib.dumps(json).encode('utf-8')
 
     if form is not None:
         _setdefault_header(headers, 'Content-Type', _FORM_CONTENTTYPE)

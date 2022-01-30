@@ -135,17 +135,17 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(result['data'], 'burrito')
 
     def test_json(self):
-        result = self._get_json(mureq.post('https://httpbingo.org/post', json=json.dumps({'a': 1})))
+        result = self._get_json(mureq.post('https://httpbingo.org/post', json={'a': 1}))
         # we must add the application/json header here
         self.assertEqual(result['headers']['Content-Type'], ['application/json'])
         self.assertEqual(result['json'], {'a': 1})
 
-        data = json.dumps({'b': 2})
-        result = self._get_json(mureq.post('https://httpbingo.org/post', json=data,
+        obj = {'b': 2}
+        result = self._get_json(mureq.post('https://httpbingo.org/post', json=obj,
             headers={'Content-Type': 'application/jose+json'}))
         # we must not override the user-supplied content-type header
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
-        self.assertEqual(result['data'], data)
+        self.assertEqual(json.loads(result['data']), obj)
 
     def test_form(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', form={'a': '1'}))
