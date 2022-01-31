@@ -71,6 +71,8 @@ mureq supports Python 3.6 and higher. Copy `mureq.py` into a suitable directory 
 
 Supply-chain attacks are considerably mitigated simply by vendoring mureq (i.e. copying it into your tree). If you are also concerned about future attacks on this GitHub account (or GitHub itself), tagged releases of mureq will be signed with the GPG key `0x740FC947B135E7627D4D00F21996B89DF018DCAB` (expires 2025-07-28), or some future key in a chain of trust from it.
 
+Vendoring mureq's tests is not recommended. The tests rely on third-party HTTP services, so including them in a project-specific test suite or CI/CD pipeline will reduce the reliability of your project's tests and also risks overburdening the third-party services.
+
 ### How do I use mureq?
 
 The core API (`mureq.get`, `mureq.post`, `mureq.request`, etc.) is similar to python-requests, with a few differences. For now, see the docstrings in `mureq.py` itself for documentation. HTML documentation will be released later if there's a demand for it.
