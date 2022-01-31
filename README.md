@@ -78,7 +78,7 @@ The core API (`mureq.get`, `mureq.post`, `mureq.request`, etc.) is similar to py
 If you're switching from python-requests, there are a few things to keep in mind:
 
 1. `mureq.get`, `mureq.post`, and `mureq.request` mostly work like the [analogous python-requests calls](https://docs.python-requests.org/en/latest/user/quickstart/#make-a-request).
-1. The response type is `mureq.HTTPResponse`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection) or `json` (since mureq doesn't depend on the `json` package). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
+1. The response type is `mureq.HTTPResponse`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
 1. The default way to send a POST body is with the `body` kwarg, which only accepts `bytes`.
 1. The `json` kwarg takes an arbitrary object, which is serialized to JSON, encoded as UTF-8, and sent as the request body with the usual `Content-Type: application/json` header.
 1. To send a form-encoded POST body, use the `form` kwarg. This accepts a dictionary of key-value pairs, or any object that can be serialized by [urllib.parse.urlencode](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode). It will add the usual `Content-Type: application/x-www-form-urlencoded` header.
