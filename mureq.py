@@ -14,7 +14,7 @@ import sys
 import urllib.parse
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
