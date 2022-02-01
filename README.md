@@ -20,6 +20,8 @@ b''
 'application/json'
 >>> response.body
 b'{"type":"sync","status-code":200,"status":"OK","result":{"established":[],"plugs":[],"slots":[]}}'
+>>> response.json()
+{'type': 'sync', 'status-code': 200, 'status': 'OK', 'result': {'established': [], 'plugs': [], 'slots': []}}
 ```
 
 ## Why?
