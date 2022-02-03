@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to mureq will be documented in this file.
 
-## [0.2.0] - 2022-FIXME-FIXME
+## [0.2.0] - 2022-02-03
 
 v0.2.0 is the second release of mureq.
 
