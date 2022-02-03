@@ -135,17 +135,17 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertEqual(result['data'], 'burrito')
 
     def test_json(self):
-        result = self._get_json(mureq.post('https://httpbingo.org/post', json=json.dumps({'a': 1})))
+        result = self._get_json(mureq.post('https://httpbingo.org/post', json={'a': 1}))
         # we must add the application/json header here
         self.assertEqual(result['headers']['Content-Type'], ['application/json'])
         self.assertEqual(result['json'], {'a': 1})
 
-        data = json.dumps({'b': 2})
-        result = self._get_json(mureq.post('https://httpbingo.org/post', json=data,
+        obj = {'b': 2}
+        result = self._get_json(mureq.post('https://httpbingo.org/post', json=obj,
             headers={'Content-Type': 'application/jose+json'}))
         # we must not override the user-supplied content-type header
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
-        self.assertEqual(result['data'], data)
+        self.assertEqual(json.loads(result['data']), obj)
 
     def test_form(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', form={'a': '1'}))
@@ -238,6 +238,18 @@ class MureqIntegrationTestCase(unittest.TestCase):
         with self.assertRaises(json.JSONDecodeError):
             json.loads(response.body)
 
+    def test_timeout(self):
+        result = mureq.get('https://httpbingo.org/delay/1', timeout=5.0)
+        self.assertEqual(result.status_code, 200)
+
+        exc = None
+        try:
+            mureq.get('https://httpbingo.org/delay/2', timeout=1.0)
+        except Exception as e:
+            exc = e
+
+        self.assertTrue(isinstance(exc, mureq.HTTPException))
+        self.assertTrue(isinstance(exc.__cause__, socket.timeout))
 
 def _run_unix_server(sock):
     """Accept loop for a toy http+unix server, to be run in a thread."""

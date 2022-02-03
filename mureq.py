@@ -14,12 +14,12 @@ import sys
 import urllib.parse
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
 
-DEFAULT_TIMEOUT=15.0
+DEFAULT_TIMEOUT = 15.0
 
 # e.g. "Python 3.8.10"
 DEFAULT_UA = "Python " + sys.version.split()[0]
@@ -32,7 +32,7 @@ def request(method, url, *, read_limit=None, **kwargs):
     :param str url: URL to request
     :param read_limit: maximum number of bytes to read from the body, or None for no limit
     :type read_limit: int or None
-    :param **kwargs: optional arguments defined by yield_response
+    :param kwargs: optional arguments defined by yield_response
     :return: Response object
     :rtype: Response
     :raises: HTTPException
@@ -40,41 +40,47 @@ def request(method, url, *, read_limit=None, **kwargs):
     with yield_response(method, url, **kwargs) as response:
         try:
             body = response.read(read_limit)
+        except HTTPException:
+            raise
         except IOError as e:
-            if isinstance(e, HTTPException):
-                raise
-            else:
-                raise HTTPException(str(e)) from e
+            raise HTTPException(str(e)) from e
         return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
+
 def get(url, **kwargs):
-    """get performs a HTTP GET request."""
+    """get performs an HTTP GET request."""
     return request('GET', url=url, **kwargs)
 
+
 def post(url, body=None, **kwargs):
-    """post performs a HTTP POST request."""
+    """post performs an HTTP POST request."""
     return request('POST', url=url, body=body, **kwargs)
 
+
 def head(url, **kwargs):
-    """head performs a HTTP HEAD request."""
+    """head performs an HTTP HEAD request."""
     return request('HEAD', url=url, **kwargs)
 
+
 def put(url, body=None, **kwargs):
-    """put performs a HTTP PUT request."""
+    """put performs an HTTP PUT request."""
     return request('PUT', url=url, body=body, **kwargs)
 
+
 def patch(url, body=None, **kwargs):
-    """patch performs a HTTP PATCH request."""
+    """patch performs an HTTP PATCH request."""
     return request('PATCH', url=url, body=body, **kwargs)
 
+
 def delete(url, **kwargs):
-    """delete performs a HTTP DELETE request."""
+    """delete performs an HTTP DELETE request."""
     return request('DELETE', url=url, **kwargs)
+
 
 @contextlib.contextmanager
 def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, headers=None,
-        params=None, body=None, form=None, json=None, verify=True, source_address=None,
-        max_redirects=None, ssl_context=None):
+                   params=None, body=None, form=None, json=None, verify=True, source_address=None,
+                   max_redirects=None, ssl_context=None):
     """yield_response is a low-level API that exposes the actual
     http.client.HTTPResponse via a contextmanager.
 
@@ -95,8 +101,7 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
     :param body: payload body of the request
     :type body: bytes or None
     :param form: parameters to be form-encoded and sent as the payload body, as a mapping or list of key-value pairs
-    :param json: serialized JSON data to be sent as the payload body
-    :type json: str or bytes or None
+    :param json: object to be serialized as JSON and sent as the payload body
     :param bool verify: whether to verify TLS certificates (default: True)
     :param source_address: source address to bind to for TCP
     :type source_address: str or tuple(str, int) or None
@@ -117,22 +122,21 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
 
     while max_redirects is None or len(visited_urls) <= max_redirects:
         url, conn, path = _prepare_request(method, url, enc_params=enc_params, timeout=timeout, unix_socket=unix_socket, verify=verify, source_address=source_address, ssl_context=ssl_context)
-        enc_params = '' # don't reappend enc_params if we get redirected
+        enc_params = ''  # don't reappend enc_params if we get redirected
         visited_urls.append(url)
         try:
             try:
                 conn.request(method, path, headers=headers, body=body)
                 response = conn.getresponse()
+            except HTTPException:
+                raise
             except IOError as e:
-                if isinstance(e, HTTPException):
-                    raise
-                else:
-                    # wrap any IOError that is not already an HTTPException
-                    # in HTTPException, exposing a uniform API for remote errors
-                    raise HTTPException(str(e)) from e
+                # wrap any IOError that is not already an HTTPException
+                # in HTTPException, exposing a uniform API for remote errors
+                raise HTTPException(str(e)) from e
             redirect_url = _check_redirect(url, response.status, response.headers)
             if max_redirects is None or redirect_url is None:
-                response.url = url # https://bugs.python.org/issue42062
+                response.url = url  # https://bugs.python.org/issue42062
                 yield response
                 return
             else:
@@ -161,13 +165,13 @@ class Response:
         self.url, self.status_code, self.headers, self.body = url, status_code, headers, body
 
     def __repr__(self):
-        return "Response(status_code=%d)" % (self.status_code,)
+        return f"Response(status_code={self.status_code:d})"
 
     @property
     def ok(self):
         """ok returns whether the response had a successful status code
         (anything other than a 40x or 50x)."""
-        return not (400 <= self.status_code and self.status_code < 600)
+        return not (400 <= self.status_code < 600)
 
     @property
     def content(self):
@@ -175,16 +179,27 @@ class Response:
         alias for compatibility with requests.Response."""
         return self.body
 
+    def raise_for_status(self):
+        """raise_for_status checks the response's success code, raising an
+        exception for error codes."""
+        if not self.ok:
+            raise HTTPErrorStatus(self.status_code)
+
+    def json(self):
+        """Attempts to deserialize the response body as UTF-8 encoded JSON."""
+        import json as jsonlib
+        return jsonlib.loads(self.body)
+
     def _debugstr(self):
         buf = io.StringIO()
         print("HTTP", self.status_code, file=buf)
         for k, v in self.headers.items():
-            print("%s: %s" % (k, v), file=buf)
+            print(f"{k}: {v}", file=buf)
         print(file=buf)
         try:
             print(self.body.decode('utf-8'), file=buf)
         except UnicodeDecodeError:
-            print("<%d bytes binary data>" % (len(self.body),), file=buf)
+            print(f"<{len(self.body)} bytes binary data>", file=buf)
         return buf.getvalue()
 
 
@@ -192,6 +207,20 @@ class TooManyRedirects(HTTPException):
     """TooManyRedirects is raised when automatic following of redirects was
     enabled, but the server redirected too many times without completing."""
     pass
+
+
+class HTTPErrorStatus(HTTPException):
+    """HTTPErrorStatus is raised by Response.raise_for_status() to indicate an
+    HTTP error code (a 40x or a 50x). Note that a well-formed response with an
+    error code does not result in an exception unless raise_for_status() is
+    called explicitly.
+    """
+
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+    def __str__(self):
+        return f"HTTP response returned error code {self.status_code:d}"
 
 
 # end public API, begin internal implementation details
@@ -214,10 +243,11 @@ class UnixHTTPConnection(HTTPConnection):
         try:
             sock.settimeout(self.timeout)
             sock.connect(self._unix_path)
-        except:
+        except Exception:
             sock.close()
             raise
         self.sock = sock
+
 
 def _check_redirect(url, status, response_headers):
     """Return the URL to redirect to, or None for no redirection."""
@@ -235,13 +265,16 @@ def _check_redirect(url, status, response_headers):
     if location.startswith('/'):
         # absolute path on old hostname
         return urllib.parse.urlunparse((old_url.scheme, old_url.netloc,
-            parsed_location.path, parsed_location.params, parsed_location.query, parsed_location.fragment))
+                                        parsed_location.path, parsed_location.params,
+                                        parsed_location.query, parsed_location.fragment))
 
     # relative path on old hostname
     old_dir, _old_file = os.path.split(old_url.path)
     new_path = os.path.join(old_dir, location)
     return urllib.parse.urlunparse((old_url.scheme, old_url.netloc,
-        new_path, parsed_location.params, parsed_location.query, parsed_location.fragment))
+                                    new_path, parsed_location.params,
+                                    parsed_location.query, parsed_location.fragment))
+
 
 def _prepare_outgoing_headers(headers):
     if headers is None:
@@ -258,6 +291,7 @@ def _prepare_outgoing_headers(headers):
     _setdefault_header(headers, 'User-Agent', DEFAULT_UA)
     return headers
 
+
 # XXX join multi-headers together so that get(), __getitem__(),
 # etc. behave intuitively, then stuff them back in an HTTPMessage.
 def _prepare_incoming_headers(headers):
@@ -271,9 +305,11 @@ def _prepare_incoming_headers(headers):
         result[k] = ','.join(vlist)
     return result
 
+
 def _setdefault_header(headers, name, value):
     if name not in headers:
         headers[name] = value
+
 
 def _prepare_body(body, form, json, headers):
     if body is not None:
@@ -282,14 +318,9 @@ def _prepare_body(body, form, json, headers):
         return body
 
     if json is not None:
-        if isinstance(json, bytes):
-            _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json
-        elif isinstance(json, str):
-            _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
-            return json.encode('utf-8')
-        else:
-            raise TypeError('json must be str, bytes, or None', type(json))
+        _setdefault_header(headers, 'Content-Type', _JSON_CONTENTTYPE)
+        import json as jsonlib
+        return jsonlib.dumps(json).encode('utf-8')
 
     if form is not None:
         _setdefault_header(headers, 'Content-Type', _FORM_CONTENTTYPE)
@@ -297,10 +328,12 @@ def _prepare_body(body, form, json, headers):
 
     return None
 
+
 def _prepare_params(params):
     if params is None:
         return ''
     return urllib.parse.urlencode(params, doseq=True)
+
 
 def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, source_address=None, unix_socket=None, verify=True, ssl_context=None):
     """Parses the URL, returns the path and the right HTTPConnection subclass."""
@@ -329,14 +362,14 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
     path = parsed_url.path
     if parsed_url.query:
         if enc_params:
-            path = '%s?%s&%s' % (path, parsed_url.query, enc_params)
+            path = f'{path}?{parsed_url.query}&{enc_params}'
         else:
-            path = '%s?%s' % (path, parsed_url.query)
+            path = f'{path}?{parsed_url.query}'
     else:
         if enc_params:
-            path = '%s?%s' % (path, enc_params)
+            path = f'{path}?{enc_params}'
         else:
-            pass # just parsed_url.path in this case
+            pass  # just parsed_url.path in this case
 
     if isinstance(source_address, str):
         source_address = (source_address, 0)
@@ -355,5 +388,6 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
         conn = HTTPConnection(host, port, source_address=source_address, timeout=timeout)
 
     munged_url = urllib.parse.urlunparse((parsed_url.scheme, parsed_url.netloc,
-        path, parsed_url.params, '', parsed_url.fragment))
+                                          path, parsed_url.params,
+                                          '', parsed_url.fragment))
     return munged_url, conn, path

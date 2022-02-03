@@ -1,7 +1,7 @@
 mureq
 =====
 
-`mureq` is a single-file, zero-dependency replacement for [python-requests](https://github.com/psf/requests), intended to be vendored in-tree by Linux systems software and other lightweight applications. It is released under the [0BSD license](https://opensource.org/licenses/0BSD) to facilitate this.
+`mureq` is a single-file, zero-dependency alternative to [python-requests](https://github.com/psf/requests), intended to be vendored in-tree by Linux systems software and other lightweight applications. It is released under the [0BSD license](https://opensource.org/licenses/0BSD) to facilitate this (it can be freely copied without any attribution requirements).
 
 ```
 >>> mureq.get('https://clients3.google.com/generate_204')
@@ -20,6 +20,8 @@ b''
 'application/json'
 >>> response.body
 b'{"type":"sync","status-code":200,"status":"OK","result":{"established":[],"plugs":[],"slots":[]}}'
+>>> response.json()
+{'type': 'sync', 'status-code': 200, 'status': 'OK', 'result': {'established': [], 'plugs': [], 'slots': []}}
 ```
 
 ## Why?
@@ -71,6 +73,8 @@ mureq supports Python 3.6 and higher. Copy `mureq.py` into a suitable directory 
 
 Supply-chain attacks are considerably mitigated simply by vendoring mureq (i.e. copying it into your tree). If you are also concerned about future attacks on this GitHub account (or GitHub itself), tagged releases of mureq will be signed with the GPG key `0x740FC947B135E7627D4D00F21996B89DF018DCAB` (expires 2025-07-28), or some future key in a chain of trust from it.
 
+Vendoring mureq's tests is not recommended. The tests rely on third-party HTTP services, so including them in a project-specific test suite or CI/CD pipeline will reduce the reliability of your project's tests and also risks overburdening the third-party services.
+
 ### How do I use mureq?
 
 The core API (`mureq.get`, `mureq.post`, `mureq.request`, etc.) is similar to python-requests, with a few differences. For now, see the docstrings in `mureq.py` itself for documentation. HTML documentation will be released later if there's a demand for it.
@@ -78,9 +82,9 @@ The core API (`mureq.get`, `mureq.post`, `mureq.request`, etc.) is similar to py
 If you're switching from python-requests, there are a few things to keep in mind:
 
 1. `mureq.get`, `mureq.post`, and `mureq.request` mostly work like the [analogous python-requests calls](https://docs.python-requests.org/en/latest/user/quickstart/#make-a-request).
-1. The response type is `mureq.HTTPResponse`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection) or `json` (since mureq doesn't depend on the `json` package). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
+1. The response type is `mureq.HTTPResponse`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
 1. The default way to send a POST body is with the `body` kwarg, which only accepts `bytes`.
-1. The `json` kwarg in mureq is not compatible with the corresponding kwarg in python-requests. In python-requests, `json` takes an arbitrary object, which the library then serializes to JSON on your behalf. In mureq, it takes an already-serialized `str` or `bytes`, e.g. the output of `json.dumps(obj)`. (This is primarily to avoid pulling in the `json` package by default.) Unlike the aforementioned `body` kwarg, `json` will encode its argument as UTF-8 if necessary and add the usual `Content-Type: application/json` header.
+1. The `json` kwarg takes an arbitrary object, which is serialized to JSON, encoded as UTF-8, and sent as the request body with the usual `Content-Type: application/json` header.
 1. To send a form-encoded POST body, use the `form` kwarg. This accepts a dictionary of key-value pairs, or any object that can be serialized by [urllib.parse.urlencode](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode). It will add the usual `Content-Type: application/x-www-form-urlencoded` header.
 1. To make a request without reading the entire body at once, use `with mureq.yield_response(url, method, **kwargs)`. This yields a [http.client.HTTPResponse](https://docs.python.org/3/library/http.client.html#httpresponse-objects). Exiting the contextmanager automatically closes the socket.
 1. mureq does not follow HTTP redirections by default. To enable them, use the kwarg `max_redirects`, which takes an integer number of redirects to allow, e.g. `max_redirects=2`.
