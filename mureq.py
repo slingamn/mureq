@@ -43,7 +43,7 @@ def request(method, url, *, read_limit=None, **kwargs):
             body = response.read(read_limit)
         except HTTPException:
             raise
-        except IOError as e:
+        except OSError as e:
             raise HTTPException(str(e)) from e
         return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
 
@@ -131,8 +131,8 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
                 response = conn.getresponse()
             except HTTPException:
                 raise
-            except IOError as e:
-                # wrap any IOError that is not already an HTTPException
+            except OSError as e:
+                # wrap any OSError that is not already an HTTPException
                 # in HTTPException, exposing a uniform API for remote errors
                 raise HTTPException(str(e)) from e
             redirect_url = _check_redirect(url, response.status, response.headers)
