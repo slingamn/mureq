@@ -145,6 +145,7 @@ def yield_response(method, url, *, unix_socket=None, timeout=DEFAULT_TIMEOUT, he
                 if response.status == 303:
                     # 303 See Other: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
                     method = 'GET'
+                    body = None
         finally:
             conn.close()
 
