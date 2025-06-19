@@ -132,7 +132,7 @@ def yield_response(
     :raises: HTTPException
     """
     method = method.upper()
-    headers = _prepare_outgoing_headers(headers)
+    headers = typing.cast("MutableMapping[str, str]", _prepare_outgoing_headers(headers))
     enc_params = _prepare_params(params)
     body_to_send = _prepare_body(body, form, json, headers)
 
