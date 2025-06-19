@@ -134,7 +134,7 @@ def yield_response(
     method = method.upper()
     headers = _prepare_outgoing_headers(headers)
     enc_params = _prepare_params(params)
-    body = _prepare_body(body, form, json, headers)
+    body_to_send = _prepare_body(body, form, json, headers)
 
     visited_urls: list[str] = []
 
@@ -144,7 +144,7 @@ def yield_response(
         visited_urls.append(url)
         try:
             try:
-                conn.request(method, path, headers=headers, body=body)
+                conn.request(method, path, headers=headers, body=body_to_send)
                 response = conn.getresponse()
             except HTTPException:
                 raise
@@ -162,7 +162,7 @@ def yield_response(
                 if response.status == 303:
                     # 303 See Other: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
                     method = 'GET'
-                    body = None
+                    body_to_send = None
         finally:
             conn.close()
 
@@ -334,7 +334,7 @@ def _setdefault_header(headers, name, value):
         headers[name] = value
 
 
-def _prepare_body(body, form, json, headers):
+def _prepare_body(body, form, json, headers) -> bytes | str | None:
     if body is not None:
         if not isinstance(body, bytes):
             raise TypeError('body must be bytes or None', type(body))
