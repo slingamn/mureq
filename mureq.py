@@ -375,6 +375,8 @@ def _prepare_request(method, url, *, enc_params='', timeout=DEFAULT_TIMEOUT, sou
 
     is_https = (scheme == 'https')
     host = parsed_url.hostname
+    if host is None:
+        raise ValueError("host is missing from url", url)
     port = 443 if is_https else 80
     if parsed_url.port:
         port = parsed_url.port
