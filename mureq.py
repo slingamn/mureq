@@ -353,7 +353,7 @@ def _prepare_body(body, form, json, headers) -> bytes | None:
 
     if form is not None:
         _setdefault_header(headers, 'Content-Type', _FORM_CONTENTTYPE)
-        return urllib.parse.urlencode(form, doseq=True).encode('utf-8')
+        return urllib.parse.urlencode(form, doseq=True).encode('ascii')
 
     return None
 
