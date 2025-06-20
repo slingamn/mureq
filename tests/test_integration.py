@@ -125,7 +125,15 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
     def test_head(self):
         response = mureq.head('https://httpbingo.org/head')
-        self.assertIn('Date', response.headers)
+        date_header = response.headers['Date']
+        self.assertTrue(date_header)
+        # check raw_headers as well
+        success = False
+        for k, v in response.raw_headers:
+            if k.lower() == 'date':
+                success = True
+                self.assertEqual(v, date_header)
+        self.assertTrue(success, 'headers and raw_headers do not correspond')
 
     def test_post(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', body=b'xyz'))

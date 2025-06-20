@@ -49,7 +49,8 @@ def request(method: str, url: str, *, read_limit: int | None = None,  **kwargs) 
             raise
         except OSError as e:
             raise HTTPException(str(e)) from e
-        return Response(response.url, response.status, _prepare_incoming_headers(response.headers), body)
+        headers, raw_headers = _prepare_incoming_headers(response.headers)
+        return Response(response.url, response.status, headers, raw_headers, body)
 
 
 def get(url: str, **kwargs) -> "Response":
@@ -175,17 +176,20 @@ class Response:
     :ivar str url: the retrieved URL, indicating whether a redirection occurred
     :ivar int status_code: the HTTP status code
     :ivar http.client.HTTPMessage headers: the HTTP headers
+    :ivar raw_headers: the original unmerged HTTP headers as a list of tuples
     :ivar bytes body: the payload body of the response
     """
 
-    __slots__ = ('url', 'status_code', 'headers', 'body')
+    __slots__ = ('url', 'status_code', 'headers', 'raw_headers', 'body')
     url: str
     status_code: int
     headers: Headers
+    raw_headers: list[tuple[str, str]]
     body: bytes
 
-    def __init__(self, url, status_code, headers, body):
-        self.url, self.status_code, self.headers, self.body = url, status_code, headers, body
+    def __init__(self, url, status_code, headers, raw_headers, body):
+        self.url, self.status_code, self.headers, self.raw_headers, self.body = \
+            url, status_code, headers, raw_headers, body
 
     def __repr__(self) -> str:
         return f"Response(status_code={self.status_code:d})"
@@ -318,15 +322,17 @@ def _prepare_outgoing_headers(headers):
 # XXX join multi-headers together so that get(), __getitem__(),
 # etc. behave intuitively, then stuff them back in an HTTPMessage.
 def _prepare_incoming_headers(headers):
+    raw_headers = []
     headers_dict = {}
     for k, v in headers.items():
         headers_dict.setdefault(k, []).append(v)
+        raw_headers.append((k, v))
     result = HTTPMessage()
     # note that iterating over headers_dict preserves the original
     # insertion order in all versions since Python 3.6:
     for k, vlist in headers_dict.items():
         result[k] = ','.join(vlist)
-    return result
+    return result, raw_headers
 
 
 def _setdefault_header(headers, name, value):
