@@ -1,0 +1,23 @@
+name: TypeChecks
+on: push
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: requirements-dev.txt
+        allow-prereleases: true
+    - run: pip install -r requirements-dev.txt
+    - run: pyflakes mureq.py
+    - run: flake8 mureq.py
+    - run: mypy mureq.py
+    - run: pyrefly check mureq.py
