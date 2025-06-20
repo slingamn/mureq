@@ -135,7 +135,7 @@ def yield_response(
     method = method.upper()
     headers = typing.cast("MutableMapping[str, str]", _prepare_outgoing_headers(headers))
     enc_params = _prepare_params(params)
-    body_to_send = _prepare_body(body, form, json, headers)
+    body = _prepare_body(body, form, json, headers)
 
     visited_urls: list[str] = []
 
@@ -145,7 +145,7 @@ def yield_response(
         visited_urls.append(url)
         try:
             try:
-                conn.request(method, path, headers=headers, body=body_to_send)
+                conn.request(method, path, headers=headers, body=body)
                 response = conn.getresponse()
             except HTTPException:
                 raise
@@ -163,7 +163,7 @@ def yield_response(
                 if response.status == 303:
                     # 303 See Other: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
                     method = 'GET'
-                    body_to_send = None
+                    body = None
         finally:
             conn.close()
 
@@ -340,7 +340,7 @@ def _setdefault_header(headers, name, value):
         headers[name] = value
 
 
-def _prepare_body(body, form, json, headers) -> bytes | str | None:
+def _prepare_body(body, form, json, headers) -> bytes | None:
     if body is not None:
         if not isinstance(body, bytes):
             raise TypeError('body must be bytes or None', type(body))
@@ -353,7 +353,7 @@ def _prepare_body(body, form, json, headers) -> bytes | str | None:
 
     if form is not None:
         _setdefault_header(headers, 'Content-Type', _FORM_CONTENTTYPE)
-        return urllib.parse.urlencode(form, doseq=True)
+        return urllib.parse.urlencode(form, doseq=True).encode('utf-8')
 
     return None
 
