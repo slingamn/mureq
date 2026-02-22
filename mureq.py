@@ -331,7 +331,7 @@ def _prepare_incoming_headers(headers):
     # note that iterating over headers_dict preserves the original
     # insertion order in all versions since Python 3.6:
     for k, vlist in headers_dict.items():
-        result[k] = ','.join(vlist)
+        result[k] = ', '.join(vlist)
     return result, raw_headers
 
 
