@@ -17,7 +17,7 @@ from collections.abc import Generator, MutableMapping
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException, HTTPResponse
 from typing import Any, cast
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
            'yield_response', 'request', 'get', 'post', 'head', 'put', 'patch', 'delete']
