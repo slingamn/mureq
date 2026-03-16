@@ -71,7 +71,7 @@ However, the API design of python-requests is excellent and in my opinion still 
 
 mureq supports Python 3.6 and higher. Copy `mureq.py` into a suitable directory of your project, then import as you would any other internal module, e.g. `import .mureq` or `import bar.baz.mureq`.
 
-Supply-chain attacks are considerably mitigated simply by vendoring mureq (i.e. copying it into your tree). If you are also concerned about future attacks on this GitHub account (or GitHub itself), tagged releases of mureq will be signed with the GPG key `0x740FC947B135E7627D4D00F21996B89DF018DCAB` (expires 2025-07-28), or some future key in a chain of trust from it.
+Supply-chain attacks are considerably mitigated simply by vendoring mureq (i.e. copying it into your tree). If you are also concerned about future attacks on this GitHub account (or GitHub itself), tagged releases of mureq will be signed with the GPG key `0x740FC947B135E7627D4D00F21996B89DF018DCAB` (expires 2030-07-24), or some future key in a chain of trust from it.
 
 Vendoring mureq's tests is not recommended. The tests rely on third-party HTTP services, so including them in a project-specific test suite or CI/CD pipeline will reduce the reliability of your project's tests and also risks overburdening the third-party services.
 
@@ -82,11 +82,11 @@ The core API (`mureq.get`, `mureq.post`, `mureq.request`, etc.) is similar to py
 If you're switching from python-requests, there are a few things to keep in mind:
 
 1. `mureq.get`, `mureq.post`, and `mureq.request` mostly work like the [analogous python-requests calls](https://docs.python-requests.org/en/latest/user/quickstart/#make-a-request).
-1. The response type is `mureq.HTTPResponse`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
+1. The response type is `mureq.Response`, which exposes fewer methods and properties than `requests.Response`. In particular, it does not have `text` (since mureq doesn't do any encoding detection). Instead, the response body is in the `body` member, which is always of type `bytes`. (For the sake of compatibility, the `content` property is provided as an alias for `body`.)
 1. The default way to send a POST body is with the `body` kwarg, which only accepts `bytes`.
 1. The `json` kwarg takes an arbitrary object, which is serialized to JSON, encoded as UTF-8, and sent as the request body with the usual `Content-Type: application/json` header.
 1. To send a form-encoded POST body, use the `form` kwarg. This accepts a dictionary of key-value pairs, or any object that can be serialized by [urllib.parse.urlencode](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode). It will add the usual `Content-Type: application/x-www-form-urlencoded` header.
-1. To make a request without reading the entire body at once, use `with mureq.yield_response(url, method, **kwargs)`. This yields a [http.client.HTTPResponse](https://docs.python.org/3/library/http.client.html#httpresponse-objects). Exiting the contextmanager automatically closes the socket.
+1. To make a request without reading the entire body at once, use `with mureq.yield_response(method, url, **kwargs)`. This yields a [http.client.HTTPResponse](https://docs.python.org/3/library/http.client.html#httpresponse-objects). Exiting the contextmanager automatically closes the socket.
 1. mureq does not follow HTTP redirections by default. To enable them, use the kwarg `max_redirects`, which takes an integer number of redirects to allow, e.g. `max_redirects=2`.
 1. mureq will throw a subclass of `mureq.HTTPException` (which is actually just [http.client.HTTPException](https://docs.python.org/3/library/http.client.html#http.client.HTTPException)) for any runtime I/O error (including invalid HTTP responses, connection failures, timeouts, and exceeding the redirection limit). It may throw other exceptions (in particular `ValueError`) for programming errors, such as invalid or inconsistent arguments.
 1. mureq supports two ways of making HTTP requests over a Unix domain stream socket:
