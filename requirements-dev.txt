@@ -1,4 +1,4 @@
-pyrefly==0.20.2
-mypy==1.16.1
+pyrefly==0.56.0
+mypy==1.19.1
 pyflakes==3.3.2
 flake8==7.2.0

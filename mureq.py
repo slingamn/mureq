@@ -12,10 +12,10 @@ import os.path
 import socket
 import ssl
 import sys
-import typing
 import urllib.parse
 from collections.abc import Generator, MutableMapping
 from http.client import HTTPConnection, HTTPSConnection, HTTPMessage, HTTPException, HTTPResponse
+from typing import Any, cast
 
 __version__ = '0.2.0'
 
@@ -25,7 +25,7 @@ __all__ = ['HTTPException', 'TooManyRedirects', 'Response',
 DEFAULT_TIMEOUT: float = 15.0
 
 # e.g. "Python 3.8.10"
-DEFAULT_UA = "Python " + sys.version.split()[0]
+DEFAULT_UA: str = "Python " + sys.version.split()[0]
 
 Headers = MutableMapping[str, str] | HTTPMessage
 
@@ -94,7 +94,7 @@ def yield_response(
     params: dict[str, str | bytes] | list[tuple[str, str | bytes]] | None = None,
     body: bytes | None = None,
     form: dict[str, str | bytes] | list[tuple[str, str | bytes]] | None = None,
-    json=None,
+    json: Any = None,
     verify: bool = True,
     source_address: str | tuple[str, int] | None = None,
     max_redirects: int | None = None,
@@ -133,7 +133,7 @@ def yield_response(
     :raises: HTTPException
     """
     method = method.upper()
-    headers = typing.cast("MutableMapping[str, str]", _prepare_outgoing_headers(headers))
+    headers = _prepare_outgoing_headers(headers)
     enc_params = _prepare_params(params)
     body = _prepare_body(body, form, json, headers)
 
@@ -145,7 +145,7 @@ def yield_response(
         visited_urls.append(url)
         try:
             try:
-                conn.request(method, path, headers=headers, body=body)
+                conn.request(method, path, headers=cast(Any, headers), body=body)
                 response = conn.getresponse()
             except HTTPException:
                 raise
@@ -187,7 +187,7 @@ class Response:
     raw_headers: list[tuple[str, str]]
     body: bytes
 
-    def __init__(self, url, status_code, headers, raw_headers, body):
+    def __init__(self, url: str, status_code: int, headers: Headers, raw_headers: list[tuple[str, str]], body: bytes):
         self.url, self.status_code, self.headers, self.raw_headers, self.body = \
             url, status_code, headers, raw_headers, body
 
@@ -212,7 +212,7 @@ class Response:
         if not self.ok:
             raise HTTPErrorStatus(self.status_code)
 
-    def json(self):
+    def json(self) -> Any:
         """Attempts to deserialize the response body as UTF-8 encoded JSON."""
         import json as jsonlib
         return jsonlib.loads(self.body)
@@ -276,7 +276,7 @@ class UnixHTTPConnection(HTTPConnection):
         self.sock = sock
 
 
-def _check_redirect(url, status, response_headers):
+def _check_redirect(url: str, status: int, response_headers: HTTPMessage) -> str | None:
     """Return the URL to redirect to, or None for no redirection."""
     if status not in (301, 302, 303, 307, 308):
         return None
@@ -303,7 +303,7 @@ def _check_redirect(url, status, response_headers):
                                     parsed_location.query, parsed_location.fragment))
 
 
-def _prepare_outgoing_headers(headers):
+def _prepare_outgoing_headers(headers: Headers | list[tuple[str, str]] | None) -> HTTPMessage:
     if headers is None:
         headers = HTTPMessage()
     elif not isinstance(headers, HTTPMessage):
@@ -321,9 +321,9 @@ def _prepare_outgoing_headers(headers):
 
 # XXX join multi-headers together so that get(), __getitem__(),
 # etc. behave intuitively, then stuff them back in an HTTPMessage.
-def _prepare_incoming_headers(headers):
-    raw_headers = []
-    headers_dict = {}
+def _prepare_incoming_headers(headers: HTTPMessage) -> tuple[HTTPMessage, list[tuple[str, str]]]:
+    raw_headers: list[tuple[str, str]] = []
+    headers_dict: dict[str, list[str]] = {}
     for k, v in headers.items():
         headers_dict.setdefault(k, []).append(v)
         raw_headers.append((k, v))
