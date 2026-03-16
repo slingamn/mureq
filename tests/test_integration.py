@@ -12,12 +12,23 @@ import socket
 import threading
 import tempfile
 import os.path
-import urllib.parse
 import ssl
 import http.client
 import http.server
+import urllib.request
+import urllib.parse
 
 import mureq
+
+
+def strip_b64_if_present(data):
+    # if httpbingo isn't sure about the incoming content-type header, it returns the data field
+    # as a b64-encoded data url: data:application/jose+json;base64,YT0x
+    # if it's sure the content type is acceptable in a JSON string, it returns the data itself: a=1
+    if data.startswith('data:'):
+        with urllib.request.urlopen(data) as response:
+            return response.read().decode('utf8')
+    return data
 
 
 class MureqIntegrationTestCase(unittest.TestCase):
@@ -114,25 +125,33 @@ class MureqIntegrationTestCase(unittest.TestCase):
 
     def test_head(self):
         response = mureq.head('https://httpbingo.org/head')
-        self.assertIn('Content-Length', response.headers)
+        date_header = response.headers['Date']
+        self.assertTrue(date_header)
+        # check raw_headers as well
+        success = False
+        for k, v in response.raw_headers:
+            if k.lower() == 'date':
+                success = True
+                self.assertEqual(v, date_header)
+        self.assertTrue(success, 'headers and raw_headers do not correspond')
 
     def test_post(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', body=b'xyz'))
         self.assertEqual(result['headers']['User-Agent'], [mureq.DEFAULT_UA])
         self.assertEqual(result['url'], 'https://httpbingo.org/post')
-        self.assertEqual(result['data'], 'xyz')
+        self.assertEqual(strip_b64_if_present(result['data']), 'xyz')
 
     def test_put(self):
         result = self._get_json(mureq.put('https://httpbingo.org/put', body=b'strawberry'))
         self.assertEqual(result['headers']['User-Agent'], [mureq.DEFAULT_UA])
         self.assertEqual(result['url'], 'https://httpbingo.org/put')
-        self.assertEqual(result['data'], 'strawberry')
+        self.assertEqual(strip_b64_if_present(result['data']), 'strawberry')
 
     def test_patch(self):
         result = self._get_json(mureq.patch('https://httpbingo.org/patch', body=b'burrito'))
         self.assertEqual(result['headers']['User-Agent'], [mureq.DEFAULT_UA])
         self.assertEqual(result['url'], 'https://httpbingo.org/patch')
-        self.assertEqual(result['data'], 'burrito')
+        self.assertEqual(strip_b64_if_present(result['data']), 'burrito')
 
     def test_json(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', json={'a': 1}))
@@ -145,7 +164,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
             headers={'Content-Type': 'application/jose+json'}))
         # we must not override the user-supplied content-type header
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
-        self.assertEqual(json.loads(result['data']), obj)
+        self.assertEqual(json.loads(strip_b64_if_present(result['data'])), obj)
 
     def test_form(self):
         result = self._get_json(mureq.post('https://httpbingo.org/post', form={'a': '1'}))
@@ -158,7 +177,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         result = self._get_json(mureq.post('https://httpbingo.org/post', form={'a': '1'},
             headers={'Content-Type': 'application/jose+json'}))
         self.assertEqual(result['headers']['Content-Type'], ['application/jose+json'])
-        self.assertEqual(result['data'], 'a=1')
+        self.assertEqual(strip_b64_if_present(result['data']), 'a=1')
 
     def test_redirects(self):
         # redirects us to /get
@@ -207,7 +226,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         response = mureq.post('https://httpbingo.org/redirect-to?url=/post&status_code=307', body=b'xyz', max_redirects=1)
         self.assertEqual(response.url, 'https://httpbingo.org/post')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.body)['data'], 'xyz')
+        self.assertEqual(strip_b64_if_present(response.json()['data']), 'xyz')
 
     def test_303(self):
         # 303 turns POST into GET

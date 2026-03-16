@@ -34,17 +34,17 @@ class RedirectTestCase(unittest.TestCase):
 class ReponseTestCase(unittest.TestCase):
 
     def test_ok(self):
-        self.assertEqual(Response('', 200, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response('', 204, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response('', 301, HTTPMessage(), b'').ok, True)
-        self.assertEqual(Response('', 400, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response('', 404, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response('', 418, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response('', 500, HTTPMessage(), b'').ok, False)
-        self.assertEqual(Response('', 504, HTTPMessage(), b'').ok, False)
+        self.assertEqual(Response('', 200, HTTPMessage(), [], b'').ok, True)
+        self.assertEqual(Response('', 204, HTTPMessage(), [], b'').ok, True)
+        self.assertEqual(Response('', 301, HTTPMessage(), [], b'').ok, True)
+        self.assertEqual(Response('', 400, HTTPMessage(), [], b'').ok, False)
+        self.assertEqual(Response('', 404, HTTPMessage(), [], b'').ok, False)
+        self.assertEqual(Response('', 418, HTTPMessage(), [], b'').ok, False)
+        self.assertEqual(Response('', 500, HTTPMessage(), [], b'').ok, False)
+        self.assertEqual(Response('', 504, HTTPMessage(), [], b'').ok, False)
 
     def _assert_raises_for_status(self, code):
-        resp = Response('', code, HTTPMessage(), b'')
+        resp = Response('', code, HTTPMessage(), [], b'')
         try:
             resp.raise_for_status()
         except HTTPErrorStatus as e:
@@ -53,7 +53,7 @@ class ReponseTestCase(unittest.TestCase):
             raise AssertionError("did not raise for status", code)
 
     def _assert_does_not_raise_for_status(self, code):
-        resp = Response('', code, HTTPMessage(), b'')
+        resp = Response('', code, HTTPMessage(), [], b'')
         resp.raise_for_status()
 
     def test_raise_for_status(self):

@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to mureq will be documented in this file.
 
+## [0.3.0] - 2026-03-16
+
+v0.3.0 is the third release of mureq.
+
+### API breaks
+* Repeated headers in `Response.headers` are now joined with `, ` instead of `,`, matching the Requests behavior
+
+### Fixed
+* Redirect handling of [303 See Other](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303) now clears the request body
+
+### Added
+* Added `Response.raw_headers`, which contains the original unjoined headers as a list of string pairs
+* Added type annotations (thanks [@hbmartin](https://github.com/hbmartin)!)
+
 ## [0.2.0] - 2022-02-03
 
 v0.2.0 is the second release of mureq.
