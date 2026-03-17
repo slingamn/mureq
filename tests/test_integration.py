@@ -129,7 +129,7 @@ class MureqIntegrationTestCase(unittest.TestCase):
         self.assertTrue(date_header)
         # check raw_headers as well
         success = False
-        for k, v in response.raw_headers:
+        for k, v in response.raw_headers.items():
             if k.lower() == 'date':
                 success = True
                 self.assertEqual(v, date_header)

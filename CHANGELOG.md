@@ -12,7 +12,7 @@ v0.3.0 is the third release of mureq.
 * Redirect handling of [303 See Other](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303) now clears the request body
 
 ### Added
-* Added `Response.raw_headers`, which contains the original unjoined headers as a list of string pairs
+* Added `Response.raw_headers`, which contains the original unjoined headers as an `http.client.HTTPMessage`. `raw_headers.get_all(header_name)` will retrieve a list of all repeated headers under `header_name`.
 * Added type annotations (thanks [@hbmartin](https://github.com/hbmartin)!)
 
 ## [0.2.0] - 2022-02-03

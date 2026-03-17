@@ -49,8 +49,8 @@ def request(method: str, url: str, *, read_limit: int | None = None,  **kwargs) 
             raise
         except OSError as e:
             raise HTTPException(str(e)) from e
-        headers, raw_headers = _prepare_incoming_headers(response.headers)
-        return Response(response.url, response.status, headers, raw_headers, body)
+        headers = _prepare_incoming_headers(response.headers)
+        return Response(response.url, response.status, headers, response.headers, body)
 
 
 def get(url: str, **kwargs) -> "Response":
@@ -176,7 +176,7 @@ class Response:
     :ivar str url: the retrieved URL, indicating whether a redirection occurred
     :ivar int status_code: the HTTP status code
     :ivar http.client.HTTPMessage headers: the HTTP headers
-    :ivar raw_headers: the original unmerged HTTP headers as a list of tuples
+    :ivar http.client.HTTPMessage raw_headers: the original unmerged HTTP headers
     :ivar bytes body: the payload body of the response
     """
 
@@ -184,10 +184,10 @@ class Response:
     url: str
     status_code: int
     headers: Headers
-    raw_headers: list[tuple[str, str]]
+    raw_headers: Headers
     body: bytes
 
-    def __init__(self, url: str, status_code: int, headers: Headers, raw_headers: list[tuple[str, str]], body: bytes):
+    def __init__(self, url: str, status_code: int, headers: Headers, raw_headers: Headers, body: bytes):
         self.url, self.status_code, self.headers, self.raw_headers, self.body = \
             url, status_code, headers, raw_headers, body
 
@@ -321,18 +321,19 @@ def _prepare_outgoing_headers(headers: Headers | list[tuple[str, str]] | None) -
 
 # XXX join multi-headers together so that get(), __getitem__(),
 # etc. behave intuitively, then stuff them back in an HTTPMessage.
-def _prepare_incoming_headers(headers: HTTPMessage) -> tuple[HTTPMessage, list[tuple[str, str]]]:
-    raw_headers: list[tuple[str, str]] = []
+def _prepare_incoming_headers(headers: HTTPMessage) -> HTTPMessage:
+    header_to_name: dict[str, str] = {}
     headers_dict: dict[str, list[str]] = {}
     for k, v in headers.items():
-        headers_dict.setdefault(k, []).append(v)
-        raw_headers.append((k, v))
+        lower_name = k.lower()
+        header_to_name[lower_name] = k
+        headers_dict.setdefault(lower_name, []).append(v)
     result = HTTPMessage()
     # note that iterating over headers_dict preserves the original
     # insertion order in all versions since Python 3.6:
-    for k, vlist in headers_dict.items():
-        result[k] = ', '.join(vlist)
-    return result, raw_headers
+    for lower_name, vlist in headers_dict.items():
+        result[header_to_name[lower_name]] = ', '.join(vlist)
+    return result
 
 
 def _setdefault_header(headers, name, value):
