@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to mureq will be documented in this file.
 
-## [0.3.0] - 2026-03-16
+## [0.3.0] - 2026-03-18
 
 v0.3.0 is the third release of mureq.
 
